@@ -10,11 +10,12 @@
 
 # Helper functions for nodes: Constructors
 makeLeaf = function(class){
-  list(class)
+  list(class = class)
 }
 
 makeNumericSplit = function(column, splitPoint, trueNode, falseNode){
-  list(TRUE, column, splitPoint, trueNode, falseNode)
+  list(isNumeric = TRUE, col = column, splitPoint = splitPoint,
+       left = trueNode, right = falseNode)
 }
 
 #Category variables are always true or false, so we don't need
@@ -22,7 +23,8 @@ makeNumericSplit = function(column, splitPoint, trueNode, falseNode){
 #we use -9999 as a placeholder
 makeCategorySplit = function (column, trueNode, falseNode){
   return(
-    list(FALSE, column, -9999, trueNode, falseNode)
+    list(isNumeric = FALSE, col = column, splitPoint = -9999,
+         left = trueNode, right = falseNode)
   )
 }
 
@@ -158,7 +160,6 @@ tree.grow <- function(x,y,nmin,minleaf)
     isNumeric[i] <- (length(nonZeroOneElements) > 0)
   }
   
-  print(isNumeric)
   
   
   
@@ -170,10 +171,11 @@ tree.grow <- function(x,y,nmin,minleaf)
 tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric) 
 {
   #number of data points
-  print("Before first check")
+  print("Initial data")
   print(x)
+  print(y)
+
   n <- length(x[,1])
-  print("After first check")
   
   
   
@@ -182,16 +184,18 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
     #Impossible
   }
   
+  #Find the majority class
+  majorityClass <- 0
+  #Check if more than half are 1's
+  if (sum(y) > (length(y) / 2.0))
+  {
+    majorityClass <- 1
+  }
+  
   
   if (length(x) < nmin)
   {
-    #Find the majority class
-    majorityClass <- 0
-    #Check if more than half are 1's
-    if (sum(y) > (length(y) / 2.0))
-    {
-      majorityClass <- 1
-    }
+    print("Making leaf")
     #Return a new leaf that classifies everything to the majority class
     return (makeLeaf(majorityClass)) #leaf
   }
@@ -238,18 +242,29 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
     if (isNumeric[bestColumnForSplit])
     {
       xLeft <- x[x[bestColumnForSplit] <= bestSplitPoint,]
-      
-      print("xLeft")
-      print(xLeft)
-      
       yLeft <- y[x[bestColumnForSplit] <= bestSplitPoint]
       xRight <- x[x[bestColumnForSplit] > bestSplitPoint,]
       yRight <- y[x[bestColumnForSplit] > bestSplitPoint]
       
+      print("xLeft")
+      print(length(xLeft[,1]))
+      print(xLeft)
+      
+      print("xRight")
+      print(length(xRight[,1]))
+      print(xRight)
+      
+      
       #Recursively build the trees for each data set
       
+      if ( (length(xLeft[,1]) == 0) || (length(xRight[,1]) == 0) )
+      {
+        print("Making leaf 1, length 0")
+        return (makeLeaf(majorityClass))
+      }
+      
       leftTree <- tree.growHelper(xLeft, yLeft, nmin, minleaf, numAttributes, isNumeric)
-      rightTree <- tree.growHelper(xLeft, yLeft, nmin, minleaf, numAttributes, isNumeric)
+      rightTree <- tree.growHelper(xRight, yRight, nmin, minleaf, numAttributes, isNumeric)
       
       return(
         makeNumericSplit(bestColumnForSplit, bestSplitPoint, leftTree, rightTree)
@@ -261,6 +276,21 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
       yLeft <- y[x[bestColumnForSplit] == 0]
       xRight <- x[x[bestColumnForSplit] == 1,]
       yRight <- y[x[bestColumnForSplit] == 1]
+      
+      print("xLeft")
+      print(length(xLeft[,1]))
+      print(xLeft)
+      
+      print("xRight")
+      print(length(xRight[,1]))
+      print(xRight)
+      
+      
+      if ((length(xLeft[,1]) == 0) || (length(xRight[,1]) == 0))
+      {
+        print("Making leaf, length 0")
+        return (makeLeaf(majorityClass))
+      }
       
       leftTree <- tree.growHelper(xLeft, yLeft, nmin, minleaf, numAttributes, isNumeric)
       rightTree <- tree.growHelper(xLeft, yLeft, nmin, minleaf, numAttributes, isNumeric)
