@@ -79,32 +79,46 @@ bestNumericSplit <- function(x,y) {
   index <- (1:(n-1) )
   index
   
-  xsorted <- sort(x)
-  xFirsts <- xsorted[1:(n - 1)]
+  
+  
+  xsorted <- sort(unique(x))
+  
+  numUnique <- length(xsorted)
+  
+  xFirsts <- xsorted[1:(numUnique-1)]
   xFirsts
-  xLasts <- xsorted[2:n]
+  xLasts <- xsorted[2:numUnique]
   xLasts
   splitPoints <- 0.5*(xFirsts + xLasts)
-  splitPoints
-  splitPoints
-  
+
   rootImp <- impurity(y)
   
-  leftImps <- 1:(n-1)
-  rightImps <- 1:(n-1)
+  leftImps <- -9000
+  p0 <- -9000
+  rightImps <- -9000
+  p1 <- -9000
   
   
-  for (i in 1:(n-1)){
+  for (i in 1:(numUnique - 1)){
     leftImps[i] <- impurity(y[x <= splitPoints[i]])
     rightImps[i] <- impurity(y[x > splitPoints[i]])
+    p0[i] <- length(y[x <= splitPoints[i]]) / length(y)
+    p1[i] = 1 - p0[i]
   }
   
-  p0 = length(y[y == 0])/n
-  p1 = length(y[y == 1])/n
+  #p0 = length(y[x <= splitPoints[i]])/n
+  #p1 = length(y[x > splitPoints[i]])/n
   
-  diffs <- rootImp - (p1*leftImps + p0*rightImps)
+  diffs <- rootImp - (p0*leftImps + p1*rightImps)
+  print("Finding best split")
+  print(x)
+  print(xFirsts)
+  print(xLasts)
+  print(splitPoints)
+  print(diffs)
   #find index of diff with max element
   resultIndex = which.max(diffs)
+  print(resultIndex)
   
   #return both the split, and the delta diff, for comparing with other attrs
   return (c(splitPoints[resultIndex], diffs[resultIndex]))
@@ -122,8 +136,8 @@ binarySplitDelta <- function(x,y) {
   rootImp <- impurity(y)
 
   
-  p0 = length(y[y == 0])/n
-  p1 = length(y[y == 1])/n
+  p0 = length(y[x == 0])/n
+  p1 = length(y[x == 1])/n
   
 
   
@@ -148,21 +162,33 @@ tree.grow <- function(x,y,nmin,minleaf)
   n <- length(x[,1])
   
   #Find out if each column is numeric
-  isNumeric <- FALSE
+  isNumeric <- c(FALSE)
   
   rowNumbers <- (1:n)
   
   for (i in 1:numAttributes)
   {
+    isNumeric[i] <- FALSE
+    #TODO more R-like way?
+    
+    for (j in (1:n))
+    {
+      if ( (x[j,i] != 0) & (x[j,i] != 1) )
+      {
+        isNumeric[i] <- TRUE
+      }
+    }
     #Find the index of each element not zero or 1
-    nonZeroOneElements = rowNumbers[x[,i] != 0 || x[,i] != 1]
+    #nonZeroOneElements = rowNumbers[x[i, rowNumbers] != 0 || x[i, rowNumbers] != 1]
     #If we found at least one, then this is numeric
-    isNumeric[i] <- (length(nonZeroOneElements) > 0)
+    #print(nonZeroOneElements)
+    #if(length(nonZeroOneElements) > 0){
+    #  isNumeric[i] <- TRUE
+    #}
+    
   }
   
-  
-  
-  
+    
   tree.growHelper(x,y,nmin, minleaf, numAttributes, isNumeric)
 }
   
@@ -170,11 +196,12 @@ tree.grow <- function(x,y,nmin,minleaf)
 # y : class values
 tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric) 
 {
+  print("** In Tree grow helper **")
   #number of data points
   #print("Initial data")
   #print(x)
   #print(y)
-
+  
   n <- length(x[,1])
   
   
@@ -193,7 +220,9 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
   }
   
   
-  if (length(x) < nmin)
+  #If number of unique in y is 1, then we automatically make a leaf
+  #Because we're at maximum purity
+  if (length(x) < nmin | length(unique(y)) == 1)
   {
     
     #Return a new leaf that classifies everything to the majority class
@@ -206,6 +235,8 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
     bestColumnForSplit <- 0
     bestSplitPoint <- -9999
     bestSplitDelta <- -9999
+    
+    #Go through each attribute, finding inpurity gain if we divide on this attribute
     for (i in 1:numAttributes)
     {
       if (isNumeric[i])
@@ -214,6 +245,8 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
         splitPoint <- result[1]
         deltaDiff <- result[2]
 
+        print(paste("Column ", i))
+        print(paste("Delta ", deltaDiff))
         
         
         if (bestSplitDelta < deltaDiff)
@@ -227,6 +260,8 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
       {
         deltaDiff <- binarySplitDelta(x[,i], y)
         
+        print(paste("Column ", i))
+        print(paste("Delta ", deltaDiff))
         
         if (bestSplitDelta < deltaDiff)
         {
@@ -296,7 +331,7 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
       rightTree <- tree.growHelper(xLeft, yLeft, nmin, minleaf, numAttributes, isNumeric)
       
       return(
-        makeCategoricalcSplit(bestColumnForSplit, leftTree, rightTree)
+        makeCategorySplit(bestColumnForSplit, leftTree, rightTree)
       )
     }
     
