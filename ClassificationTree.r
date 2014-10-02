@@ -100,21 +100,25 @@ impurity = function(y) {
 # y: a list of classifications for each entry in x
 # Outputs: the split point which reduces the impurity the most
 # And the impurity reduction
-bestNumericSplit <- function(x,y) {
+bestNumericSplit <- function(x,y, minleaf) {
   n <- length(y)
-  index <- (1:(n-1) )
-  index
-  
+  index <- (1:(n-1) )  
   
   
   xsorted <- sort(unique(x))
   
+  if (length(xsorted) == 1)
+  {
+    #If only one element, no improvement from split
+    return (c(xsorted[1], 0))
+  }
+  
   numUnique <- length(xsorted)
   
   xFirsts <- xsorted[1:(numUnique-1)]
-  xFirsts
+  
   xLasts <- xsorted[2:numUnique]
-  xLasts
+  
   splitPoints <- 0.5*(xFirsts + xLasts)
   
   rootImp <- impurity(y)
@@ -132,19 +136,33 @@ bestNumericSplit <- function(x,y) {
     p1[i] = 1 - p0[i]
   }
   
+ 
+  
   #p0 = length(y[x <= splitPoints[i]])/n
   #p1 = length(y[x > splitPoints[i]])/n
   
   diffs <- rootImp - (p0*leftImps + p1*rightImps)
+  
+  #Set diff to 0 for ones lower than minLeaf
+  for (i in 1:1:(numUnique - 1))
+  {
+    split <- splitPoints[i]
+    if (length(x[x < split]) < minleaf | length(x[x >= split]) < minleaf )
+    {
+      diffs[i] <- 0
+    }
+  }
+  
+  
   debug("Finding best split")
   debug(x)
   debug(xFirsts)
   debug(xLasts)
   debug(splitPoints)
-  debug(diffs)
+  debug(paste("Diffs", diffs))
   #find index of diff with max element
   resultIndex = which.max(diffs)
-  debug(resultIndex)
+  debug(paste("Result index", resultIndex))
   
   #return both the split, and the delta diff, for comparing with other attrs
   return (c(splitPoints[resultIndex], diffs[resultIndex]))
@@ -252,10 +270,12 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
   
   #If number of unique in y is 1, then we automatically make a leaf
   #Because we're at maximum purity
-  if (length(x) < nmin | length(unique(y)) == 1)
+  if (length(x[,1]) < nmin | length(unique(y)) == 1)
   {
     
     #Return a new leaf that classifies everything to the majority class
+    #print("Cutting off for nmin")
+    #print(length(x))
     return (makeLeaf(majorityClass)) #leaf
   }
   else
@@ -271,11 +291,12 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
     {
       if (isNumeric[i])
       {
-        result <- bestNumericSplit(x[,i], y)
+        result <- bestNumericSplit(x[,i], y, minleaf)
         splitPoint <- result[1]
         deltaDiff <- result[2]
         
         debug(paste("Column ", i))
+        debug (paste("Best Split Delta ", bestSplitDelta))
         debug(paste("Delta ", deltaDiff))
         
         
@@ -293,7 +314,10 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
         debug(paste("Column ", i))
         debug(paste("Delta ", deltaDiff))
         
-        if (bestSplitDelta < deltaDiff)
+        numOnLeft <- length( x[x[bestColumnForSplit] == 0,] )
+        numOnRight <- length( x[x[bestColumnForSplit] == 1,] )
+        
+        if (bestSplitDelta < deltaDiff & numOnLeft >= minleaf & numOnRight >= minLeaf)
         {
           bestColumnForSplit <- i
           bestSplitDelta <- deltaDiff
