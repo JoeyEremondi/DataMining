@@ -1,8 +1,16 @@
-#useful for turning on and off debugging
+#debug
+#arg : any type
+#return : NULL
+#prints a, if the function body is not commented out. Useful for turning debugging on and off.
 debug = function(arg)
 {
   #print(arg)
 }
+
+
+#=====================================================
+
+#Data format for Decision Trees
 
 # We use lists to store trees
 # Leaf nodes are singleton lists, of the format [MajorityClass]
@@ -14,73 +22,98 @@ debug = function(arg)
 # and drop to the falseNode otherwise
 # If not numeric, we drop to the trueNode if the given attribute is 1, falseNode if it is 0
 
+#============================================================================================
+
 # Helper functions for nodes: Constructors
+
+# makeLeaf
+# class : {0,1}, the majority class of a data set
+# return : a leaf node which classifies all data to the majority class
+# Basic constructor for leaf nodes
 makeLeaf = function(class){
   return(class)
 }
 
+# makeNumericSplit
+# column : Int, the column index of the attribute which this node splits on
+# splitPoint : Int, the number we compare to for classifying a value
+# trueNode : Tree, the sub-tree which we use to classify values less than the given attribute
+# falseNode : Tree, same as above but for larger values
+# return : Tree, a new tree classfying values based on the given column attribute
+# Basic constructor for numeric split nodes
 makeNumericSplit = function(column, splitPoint, trueNode, falseNode){
   return(list(TRUE, column, splitPoint,
               trueNode, falseNode))
 }
 
-#Category variables are always true or false, so we don't need
-#a numeric value to split on
-#we use -9999 as a placeholder
+# makeCategorySplit
+# column : Int, the column index of the attribute which this node splits on
+# trueNode : Tree, the sub-tree which we use to values with 0 as the given attribute
+# falseNode : Tree, same as above for 1-valued
+# return : Tree, a new tree classfying values based on the given column attribute
+# Basic constructor for categorical split nodes
 makeCategorySplit = function (column, trueNode, falseNode){
   return(
+    #We use -9999 as a placeholder, since there is no split number
     list(FALSE, column, -9999,
          trueNode, falseNode)
   )
 }
 
-# Basic test functions for nodes
+# isLeaf
+# node : Tree, the node to test
+# return : Bool, TRUE if the tree is a single node, FALSE otherwise
 isLeaf <- function(node){
   return (class(node) == "numeric")
 }
 
-isInterior = function(node){
-  return (length(node) > 1)
-}
-
+# isNumeric
+# node : Tree, the node to test, assumed to be non-leaf
+# return : Bool, TRUE if the node classifies on a numeric value, false otherwise
 isNumeric = function(node){
   return( node[[1]] )
 }
 
-isCategorical = function(node){
-  return(node[[1]] == FALSE)
-}
-
+# nodeColumn
+# node : Tree, assumed to be non-leaf
+# return : Int, the column index of the attribute this node splits on
 nodeColumn = function(node)
 {
   node[[2]]
 }
 
+# nodeSplitPoint
+# node : Tree, assumed to be non-leaf and numeric
+# return : Real, the numeric value which the node compares data values to
 nodeSplitPoint = function(node)
 {
   node[[3]]
 }
 
+# leftChild
+# node : Tree, assumed to be non-leaf
+# return : Tree, the tree which this node uses to classify <split or 0 cases
 leftChild = function(node)
 {
   node[[4]]
 }
 
+# rightChild
+# node : Tree, assumed to be non-leaf
+# return : Tree, the tree which this node uses to classify >=split or 1 cases
 rightChild = function(node)
 {
   node[[5]]
 }
 
-# Data type tree
-# 
 
+# impurity
+# y : [{0,1}], a vector of class values
+# return : Real, the impurity y using the GINI metric
 
-
-
-# Measure the impurity of a list of binary values using the GINI metric
-# Since y is a list of 0's and 1's, adding all elements in y is
-# the same as counting the number of 1's in y
 impurity = function(y) {
+  # Since y is a list of 0's and 1's, adding all elements in y is
+  # the same as counting the number of 1's in y
   if (length(y) > 0)
   {
     #TODO check this
@@ -94,12 +127,14 @@ impurity = function(y) {
   return (p1 * (1-p1))
 }
 
-# Given numeric inputs, find the best splitting point 
-# Inputs:
-# x: a list of numeric values
-# y: a list of classifications for each entry in x
-# Outputs: the split point which reduces the impurity the most
-# And the impurity reduction
+# bestNumericSplit
+# x : [Real], a list of numeric values
+# y: [{0,1}], a list of classes for each entry in x
+# minleaf : the minimum number of data points that must be in each part of a split
+# return: (Real, Real)
+# The first value returned is the numeric value for the valid split on x
+# with greatest impurity reduction
+# The second is the value of the impurity reduction
 bestNumericSplit <- function(x,y, minleaf) {
   n <- length(y)
   index <- (1:(n-1) )  
@@ -169,6 +204,10 @@ bestNumericSplit <- function(x,y, minleaf) {
   
 }
 
+# binarySplitDelta
+# x : [{0,1}], A vector of input categorical values
+# y : [{0,1}], Class values for each x entry
+# return : Real, the GINI impurity reduction from splitting based on x values
 binarySplitDelta <- function(x,y) {
   
   n <- length(y)
@@ -194,9 +233,14 @@ binarySplitDelta <- function(x,y) {
   
 }
 
-#
-#bestAttribute <- function(tree)
-
+# tree.grow
+# x : Matrix, input numeric and categorical data
+# y : [{0,1}], class values for each row of x
+# nmin : the minimum number of values in any non-leaf node in the result tree
+# minleaf : the minimum values in any leaf node in the result tree
+# return : Tree
+# Given a training data set x and y, and parameters to avoid overfitting
+# Return a classification tree trained on that data set
 tree.grow <- function(x,y,nmin,minleaf)
 {
   
@@ -236,8 +280,15 @@ tree.grow <- function(x,y,nmin,minleaf)
   tree.growHelper(x,y,nmin, minleaf, numAttributes, isNumeric)
 }
 
-# x : attributes
-# y : class values
+# tree.grow
+# x : Matrix, input numeric and categorical data
+# y : [{0,1}], class values for each row of x
+# nmin : the minimum number of values in any non-leaf node in the result tree
+# minleaf : the minimum values in any leaf node in the result tree
+# return : Tree
+# Recursive function to grow a decision tree from a given data-set
+# Does the real work for growing a tree
+# But is separated from tree.grow so that we can get some data from pre-processing
 tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric) 
 {
   debug("** In Tree grow helper **")
@@ -396,7 +447,11 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
     
   }
 }
-
+# tree.classify
+# xRow : [Numeric | {0,1}], a row of input data
+# tr : Tree, a decision tree generated by tree.grow
+# return : {0,1}, the class assigned to rowX by our decision tree tr
+# Assumes tr was trained using data of the same format as xRow
 tree.classify <- function(xRow, tr)
 {
   if (isLeaf(tr))
@@ -431,6 +486,11 @@ tree.classify <- function(xRow, tr)
   }
 }
 
+# printTreeHelper
+# tree : Tree, a node to print
+# colNames : [String], a vector of names for the columns of data our tree was trained on
+# level : the depth of this node in the tree
+# Helper function for recursively pretty-printing a tree
 printTreeHelper <- function(tree, colNames, level)
 {
   spacer <- ""
@@ -464,6 +524,11 @@ printTreeHelper <- function(tree, colNames, level)
   }
 }
 
+# printTreeHelper
+# tree : Tree, a node to print
+# colNames : [String], a vector of names for the columns of data our tree was trained on
+# Pretty-print a tree generated by tree.grow
+# very useful for debugging
 printTree <- function(tree, colNames)
 {
   printTreeHelper(tree, colNames, 0)
