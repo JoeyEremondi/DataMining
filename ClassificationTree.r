@@ -1,3 +1,9 @@
+# Utrecht Universiteit, Data Mining
+# Marinus Burger
+# Joseph Eremondi
+# Assignment 1
+# October 10, 2014
+
 #debug
 #arg : any type
 #return : NULL
@@ -171,7 +177,7 @@ bestNumericSplit <- function(x,y, minleaf) {
     p1[i] = 1 - p0[i]
   }
   
- 
+  
   
   #p0 = length(y[x <= splitPoints[i]])/n
   #p1 = length(y[x > splitPoints[i]])/n
