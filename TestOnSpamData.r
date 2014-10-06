@@ -2,7 +2,7 @@
 
 nminValues = 2^(0:12)
 
-minleafValues 2^(0:12)
+minleafValues = 2^(0:12)
 
 classifySpam = function(x)
 {
@@ -15,17 +15,17 @@ classifySpam = function(x)
   {
     for (minleaf in minleafValues)
     {
-      print(paste("nmin: ", nmin)
-      print(paste("nmin: ", minleaf))
-      
-      tr <- tree.grow(x, y, nmin, minleaf)
-      
-      results <- tree.classify(testData, tr)
-      
-      confusion = c(0,0,0,0) #TODO
-      
-      print("Confusion matrix")
-      print(confusion)
+      print(paste("nmin: ", nmin))
+            print(paste("nmin: ", minleaf))
+            
+            tr <- tree.grow(x, y, nmin, minleaf)
+            
+            results <- tree.classify(testData, tr)
+            
+            confusion = c(0,0,0,0) #TODO
+            
+            print("Confusion matrix")
+            print(confusion)
     }
   }
 }
