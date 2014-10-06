@@ -1,31 +1,42 @@
 #Skeleton script for testing our algorithm
 
-nminValues = 2^(0:12)
+n = length(spamBase[,1])
 
-minleafValues = 2^(0:12)
+nminValues = c(100, 1000)#2^(0:12)
 
-classifySpam = function(x)
+minleafValues = c(100, 1000) #2^(0:12)
+
+classifySpam = function()
 {
-  spam.dat <- read.csv('spam.dat')
+  all <- c(1:n)
+  seventyPercentOfAll <- sort(unique(sample(n, (0.7*n))))
+  restOfAll <- all[-seventyPercentOfAll]
   
-  trainRows = 0 #TODO
-  testRows = 0 #TODO
+  TrainingSpambase <- Spambase[seventyPercentOfAll,]
+  TestSpambase <- Spambase[restOfAll,]
   
+  
+    
   for (nmin in nminValues)
   {
     for (minleaf in minleafValues)
     {
-      print(paste("nmin: ", nmin))
-            print(paste("nmin: ", minleaf))
+
+      
+            x <- TrainingSpambase[,(1:57)]
+            y <- TrainingSpambase[,58]
             
             tr <- tree.grow(x, y, nmin, minleaf)
             
-            results <- tree.classify(testData, tr)
+            results <- tree.classify(TestSpambase[,(1:57)], tr)
+      
+            realResults = TestSpambase[,58]
             
-            confusion = c(0,0,0,0) #TODO
+            successRate = sum(results == realResults)/length(TestSpambase[,58])
+      
+            errorRate = 1 - successRate
             
-            print("Confusion matrix")
-            print(confusion)
+            print(paste("nmin ", nmin, "minleaf ", minleaf, "error ", errorRate ))
     }
   }
 }
