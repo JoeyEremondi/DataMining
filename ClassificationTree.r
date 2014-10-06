@@ -122,7 +122,6 @@ impurity = function(y) {
   # the same as counting the number of 1's in y
   if (length(y) > 0)
   {
-    #TODO check this
     p1 <- sum(y) / length(y)
   }
   else
@@ -150,9 +149,11 @@ bestNumericSplit <- function(x,y, minleaf) {
   
   if (length(xsorted) == 1)
   {
-    #If only one element, no improvement from split
+    #If only one unique element, no improvement from split
     return (c(xsorted[1], 0))
   }
+  
+  #Get the differences between consecutive elements
   
   numUnique <- length(xsorted)
   
@@ -162,14 +163,16 @@ bestNumericSplit <- function(x,y, minleaf) {
   
   splitPoints <- 0.5*(xFirsts + xLasts)
   
+  #Get the root impurity that we're comparing too
   rootImp <- impurity(y)
   
+  #Default starter values, should always get overwritten
   leftImps <- -9000
   p0 <- -9000
   rightImps <- -9000
   p1 <- -9000
   
-  
+  #Loop through each possible split point to calculate the impurity of the split
   for (i in 1:(numUnique - 1)){
     leftImps[i] <- impurity(y[x <= splitPoints[i]])
     rightImps[i] <- impurity(y[x > splitPoints[i]])
@@ -177,14 +180,11 @@ bestNumericSplit <- function(x,y, minleaf) {
     p1[i] = 1 - p0[i]
   }
   
-  
-  
-  #p0 = length(y[x <= splitPoints[i]])/n
-  #p1 = length(y[x > splitPoints[i]])/n
-  
+  #Find the difference frm the root impurity
   diffs <- rootImp - (p0*leftImps + p1*rightImps)
   
-  #Set diff to 0 for ones lower than minLeaf
+  #Set diff to 0 for ones with less than minLeaf elements
+  #This ensures they will never be selected as the best
   for (i in 1:1:(numUnique - 1))
   {
     split <- splitPoints[i]
@@ -194,17 +194,10 @@ bestNumericSplit <- function(x,y, minleaf) {
     }
   }
   
-  
-  debug("Finding best split")
-  debug(x)
-  debug(xFirsts)
-  debug(xLasts)
-  debug(splitPoints)
-  debug(paste("Diffs", diffs))
+
   #find index of diff with max element
   resultIndex = which.max(diffs)
-  debug(paste("Result index", resultIndex))
-  
+
   #return both the split, and the delta diff, for comparing with other attrs
   return (c(splitPoints[resultIndex], diffs[resultIndex]))
   
@@ -214,6 +207,7 @@ bestNumericSplit <- function(x,y, minleaf) {
 # x : [{0,1}], A vector of input categorical values
 # y : [{0,1}], Class values for each x entry
 # return : Real, the GINI impurity reduction from splitting based on x values
+# Nothing complicated, just splits a data set based on attribute and calculates the impurity reduction
 binarySplitDelta <- function(x,y) {
   
   n <- length(y)
@@ -224,17 +218,11 @@ binarySplitDelta <- function(x,y) {
   
   rootImp <- impurity(y)
   
-  
   p0 = length(y[x == 0])/n
   p1 = length(y[x == 1])/n
   
-  
-  
   diff <- rootImp - (p0*leftImp + p1*rightImp)
   
-  
-  
-  #return both the split, and the delta diff, for comparing with other attrs
   return (diff)
   
 }
@@ -260,11 +248,12 @@ tree.grow <- function(x,y,nmin,minleaf)
   
   rowNumbers <- (1:n)
   
+  #Loop through each element in each column, checking if its value is anyting other than 0 or 1
+  #Thankfully, we only do this once for our data set
   for (i in 1:numAttributes)
   {
     isNumeric[i] <- FALSE
-    #TODO more R-like way?
-    
+
     for (j in (1:n))
     {
       if ( (x[j,i] != 0) & (x[j,i] != 1) )
@@ -272,16 +261,9 @@ tree.grow <- function(x,y,nmin,minleaf)
         isNumeric[i] <- TRUE
       }
     }
-    #Find the index of each element not zero or 1
-    #nonZeroOneElements = rowNumbers[x[i, rowNumbers] != 0 || x[i, rowNumbers] != 1]
-    #If we found at least one, then this is numeric
-    #debug(nonZeroOneElements)
-    #if(length(nonZeroOneElements) > 0){
-    #  isNumeric[i] <- TRUE
-    #}
+
     
   }
-  
   
   tree.growHelper(x,y,nmin, minleaf, numAttributes, isNumeric)
 }
@@ -297,42 +279,20 @@ tree.grow <- function(x,y,nmin,minleaf)
 # But is separated from tree.grow so that we can get some data from pre-processing
 tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric) 
 {
-  debug("** In Tree grow helper **")
-  #number of data points
-  #debug("Initial data")
-  #debug(x)
-  #debug(y)
-  
+
   n <- length(x[,1])
   
-  
-  
-  if (length(y) != n)
-  {
-    #Impossible
-  }
-  
-  debug("Finding majority class")
-  debug(x)
-  debug(y)
-  
-  #Find the majority class
+  #Find the majority class by checking if more than half are 1's
   majorityClass <- 0
-  #Check if more than half are 1's
   if (sum(y) >= (length(y) / 2.0))
   {
     majorityClass <- 1
   }
   
-  
   #If number of unique in y is 1, then we automatically make a leaf
   #Because we're at maximum purity
   if (length(x[,1]) < nmin | length(unique(y)) == 1)
   {
-    
-    #Return a new leaf that classifies everything to the majority class
-    #print("Cutting off for nmin")
-    #print(length(x))
     return (makeLeaf(majorityClass)) #leaf
   }
   else
@@ -352,11 +312,7 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
         splitPoint <- result[1]
         deltaDiff <- result[2]
         
-        debug(paste("Column ", i))
-        debug (paste("Best Split Delta ", bestSplitDelta))
-        debug(paste("Delta ", deltaDiff))
-        
-        
+        #If our found result is the best so far, store it
         if (bestSplitDelta < deltaDiff)
         {
           bestColumnForSplit <- i
@@ -368,12 +324,11 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
       {
         deltaDiff <- binarySplitDelta(x[,i], y)
         
-        debug(paste("Column ", i))
-        debug(paste("Delta ", deltaDiff))
         
         numOnLeft <- length( x[x[bestColumnForSplit] == 0,] )
         numOnRight <- length( x[x[bestColumnForSplit] == 1,] )
         
+        #If our found result is the best so far, store it
         if (bestSplitDelta < deltaDiff & numOnLeft >= minleaf & numOnRight >= minLeaf)
         {
           bestColumnForSplit <- i
@@ -384,34 +339,23 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
       
     }
     
-    debug("Found best column for split:")
-    debug(bestColumnForSplit)
-    
-    #Now that we have the best split, we divide our data
+    #Now that we have the best split, we partition our data
     if (isNumeric[bestColumnForSplit])
     {
-      xLeft <- x[x[bestColumnForSplit] <= bestSplitPoint,]
-      yLeft <- y[x[bestColumnForSplit] <= bestSplitPoint]
-      xRight <- x[x[bestColumnForSplit] > bestSplitPoint,]
-      yRight <- y[x[bestColumnForSplit] > bestSplitPoint]
-      
-      #debug("xLeft")
-      #debug(length(xLeft[,1]))
-      #debug(xLeft)
-      
-      #debug("xRight")
-      #debug(length(xRight[,1]))
-      #debug(xRight)
+      xLeft <- x[x[bestColumnForSplit] < bestSplitPoint,]
+      yLeft <- y[x[bestColumnForSplit] < bestSplitPoint]
+      xRight <- x[x[bestColumnForSplit] >= bestSplitPoint,]
+      yRight <- y[x[bestColumnForSplit] >= bestSplitPoint]
       
       
-      #Recursively build the trees for each data set
       
+      #Avoid infinite loops by checking if we partitioned in a way with no improvement
       if ( (length(xLeft[,1]) == 0) || (length(xRight[,1]) == 0) )
       {
-        debug("Making leaf 1, length 0")
         return (makeLeaf(majorityClass))
       }
       
+      #Recursively build the trees for each data set
       leftTree <- tree.growHelper(xLeft, yLeft, nmin, minleaf, numAttributes, isNumeric)
       rightTree <- tree.growHelper(xRight, yRight, nmin, minleaf, numAttributes, isNumeric)
       
@@ -419,25 +363,17 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
         makeNumericSplit(bestColumnForSplit, bestSplitPoint, leftTree, rightTree)
       )
     }
-    else
+    else #Same as above, but for binary categories
     {
       xLeft <- x[x[bestColumnForSplit] == 0,]
       yLeft <- y[x[bestColumnForSplit] == 0]
       xRight <- x[x[bestColumnForSplit] == 1,]
       yRight <- y[x[bestColumnForSplit] == 1]
       
-      #debug("xLeft")
-      #debug(length(xLeft[,1]))
-      #debug(xLeft)
-      
-      #debug("xRight")
-      #debug(length(xRight[,1]))
-      #debug(xRight)
-      
+
       
       if ((length(xLeft[,1]) == 0) || (length(xRight[,1]) == 0))
       {
-        #debug("Making leaf, length 0")
         return (makeLeaf(majorityClass))
       }
       
@@ -453,6 +389,8 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
     
   }
 }
+
+
 # tree.classifyRow
 # xRow : [Numeric | {0,1}], a row of input data
 # tr : Tree, a decision tree generated by tree.grow
@@ -460,12 +398,16 @@ tree.growHelper <- function (x, y, nmin, minleaf, numAttributes, isNumeric)
 # Assumes tr was trained using data of the same format as xRow
 tree.classifyRow <- function(xRow, tr)
 {
+  #If our current node is a leaf, just classify based on the leaf's majority class
   if (isLeaf(tr))
   {
     return(tr)
   }
   else
   {
+    #Look at the column stored in the node
+    #And recursively evaluate with the left or right tree depending on this row's
+    #data for that column
     dataToLookAt = xRow[nodeColumn(tr)]
     if (isNumeric(tr))
     {
@@ -499,6 +441,7 @@ tree.classifyRow <- function(xRow, tr)
 # Assumes tr was trained using data of the same format as x
 tree.classify <- function(x, tr)
 {
+  #Just loop through each row, classifying it
   ret = c(0)
   for (i in 1:length(x[,1]))
   {
