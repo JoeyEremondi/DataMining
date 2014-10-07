@@ -2,9 +2,9 @@
 
 n = length(spamBase[,1])
 
-nminValues = c(100, 1000)#2^(0:12)
+nminValues = 2^(0:12)
 
-minleafValues = c(100, 1000) #2^(0:12)
+minleafValues = 2^(0:12)
 
 classifySpam = function()
 {
