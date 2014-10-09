@@ -1,6 +1,6 @@
 #Skeleton script for testing our algorithm
 
-n = length(spamBase[,1])
+n = length(Spambase[,1])
 
 nminValues = 2^(0:12)
 
