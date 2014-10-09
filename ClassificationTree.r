@@ -1,7 +1,7 @@
 # Utrecht Universiteit, Data Mining
-# Marinus Burger
-# Joseph Eremondi
-# Assignment 1
+# Marinus Burger, UU# F132726
+# Joseph Eremondi, UU# 4229924
+# Assignment 1: Classification Trees
 # October 10, 2014
 
 #debug
