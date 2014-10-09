@@ -2,10 +2,16 @@
 
 n = length(Spambase[,1])
 
+#Adjust this to adjust different nmin and minleaf values
+#We test on all powers of 2 up to our data set length
+#But this takes several hours to run
+
 nminValues = 2^(0:12)
 
 minleafValues = 2^(0:12)
 
+
+#Run the tests
 classifySpam = function()
 {
   all <- c(1:n)
