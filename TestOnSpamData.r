@@ -1,3 +1,9 @@
+# Utrecht Universiteit, Data Mining
+# Marinus Burger, UU# F132726
+# Joseph Eremondi, UU# 4229924
+# Assignment 1: Classification Trees
+# October 10, 2014
+
 #Skeleton script for testing our algorithm
 
 n = length(Spambase[,1])
@@ -11,7 +17,9 @@ nminValues = 2^(0:12)
 minleafValues = 2^(0:12)
 
 
-#Run the tests
+#Run the tests, printing the results to the console
+#The results aren't quite in CSV format, but it's easy enough to
+#get them into that format with a text editor
 classifySpam = function()
 {
   all <- c(1:n)
